@@ -1542,3 +1542,158 @@ textarea {
   font-style: italic;
   margin: -8px 0 12px;
 }
+
+/* Circle card Amharic subtitle */
+.circle-amharic-subtitle {
+  color: var(--muted);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 0.95rem;
+  font-style: italic;
+  margin: -10px 0 6px;
+}
+
+/* Circle feed header */
+.circle-feed-header {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+}
+
+.circle-feed-header h2 {
+  font-size: 1.3rem;
+  margin: 0;
+}
+
+.circle-amharic-name {
+  color: var(--muted);
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  margin: 2px 0 0;
+}
+
+.member-count {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  font-size: 0.88rem;
+  gap: 5px;
+}
+
+/* Women-only circle card accent */
+.circle-card--women {
+  border-color: rgba(223, 155, 126, 0.5);
+}
+
+.circle-card--women::before {
+  background: linear-gradient(90deg, rgba(223, 155, 126, 0.15), transparent);
+  border-radius: 20px 20px 0 0;
+  content: '';
+  display: block;
+  height: 4px;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.women-only-note {
+  align-items: center;
+  color: var(--rose-clay);
+  display: flex;
+  font-size: 0.8rem;
+  gap: 5px;
+  margin: 4px 0 8px;
+}
+
+/* Circle picker in onboarding */
+.onboarding-card--wide {
+  max-width: 640px;
+}
+
+.circle-picker {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 4px;
+  width: 100%;
+}
+
+@media (max-width: 520px) {
+  .circle-picker {
+    grid-template-columns: 1fr;
+  }
+}
+
+.circle-pick-item {
+  align-items: center;
+  background: rgba(255, 250, 241, 0.8);
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  text-align: left;
+  transition: border-color 160ms, background 160ms, box-shadow 160ms;
+}
+
+.circle-pick-item.selected {
+  background: rgba(23, 62, 29, 0.06);
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(23, 62, 29, 0.08);
+}
+
+.circle-pick-check {
+  align-items: center;
+  background: white;
+  border: 1.5px solid var(--line);
+  border-radius: 50%;
+  color: var(--green);
+  display: flex;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  height: 22px;
+  justify-content: center;
+  transition: background 160ms, border-color 160ms;
+  width: 22px;
+}
+
+.circle-pick-item.selected .circle-pick-check {
+  background: var(--green);
+  border-color: var(--green);
+  color: white;
+}
+
+.circle-pick-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.circle-pick-info strong {
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.circle-pick-members {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.women-only-badge {
+  background: rgba(223, 155, 126, 0.2);
+  border-radius: 99px;
+  color: var(--clay);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 1px 7px;
+  width: fit-content;
+}
+

@@ -2,6 +2,7 @@ import { ChevronRight, Globe, Heart, Loader as Loader2, Shield } from 'lucide-re
 import { FormEvent, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { joinCircle } from '../lib/supabase';
+import { fallbackCircles } from '../lib/demo-data';
 import { t } from '../lib/i18n';
 import type { Language } from '../lib/types';
 
@@ -9,7 +10,17 @@ type Props = {
   onComplete: () => void;
 };
 
-type Step = 'welcome' | 'auth' | 'profile' | 'circle';
+type Step = 'welcome' | 'auth' | 'profile' | 'circles';
+
+// Circles shown during onboarding — all 7 spec circles
+const ONBOARDING_CIRCLES = fallbackCircles.map((c) => ({
+  id: c.id,
+  name: c.name,
+  nameAmharic: c.nameAmharic ?? c.name,
+  description: c.description,
+  members: c.members,
+  isWomenOnly: c.isWomenOnly ?? false,
+}));
 
 export function AuthFlow({ onComplete }: Props) {
   const [step, setStep] = useState<Step>('welcome');
@@ -19,10 +30,17 @@ export function AuthFlow({ onComplete }: Props) {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [dataConsent, setDataConsent] = useState(false);
+  const [selectedCircleIds, setSelectedCircleIds] = useState<string[]>(['career-anxiety']);
   const [authError, setAuthError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const { signUp, signIn, user, updateProfile } = useAuth();
+
+  function toggleCircle(id: string) {
+    setSelectedCircleIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }
 
   async function handleAuth(e: FormEvent) {
     e.preventDefault();
@@ -60,28 +78,25 @@ export function AuthFlow({ onComplete }: Props) {
       is_premium: false,
     });
 
-    setStep('circle');
+    setStep('circles');
     setSubmitting(false);
   }
 
-  async function handleCircleJoin() {
+  async function handleCirclesJoin() {
     if (!user) {
       onComplete();
       return;
     }
     setSubmitting(true);
-    try {
-      await joinCircle(user.id, 'career-anxiety');
-    } catch {
-      // ignore
-    }
+    const circleIds = selectedCircleIds.length > 0 ? selectedCircleIds : ['career-anxiety'];
+    await Promise.allSettled(circleIds.map((id) => joinCircle(user.id, id)));
     setSubmitting(false);
     onComplete();
   }
 
   return (
     <div className="onboarding-overlay">
-      <div className="onboarding-card fade-in">
+      <div className={`onboarding-card fade-in ${step === 'circles' ? 'onboarding-card--wide' : ''}`}>
         {step === 'welcome' && (
           <>
             <span className="onboarding-mark">ሰ</span>
@@ -89,13 +104,20 @@ export function AuthFlow({ onComplete }: Props) {
             <h1 style={{ fontSize: 'clamp(2rem,5vw,3rem)', lineHeight: 1.1 }}>
               {t(language, 'onboardingWelcome')}
             </h1>
-            <p style={{ color: '#4e382d', margin: '12px 0 0' }}>
-              {t(language, 'onboardingSubtitle')}
+            <p style={{ color: '#4e382d', margin: '12px 0 0', fontSize: '1.05rem' }}>
+              {language === 'am'
+                ? 'ሰላም — ሰላምን፣ ጤናን፣ ሰላምታን አንድ ቃል ያቀፈ።'
+                : 'Peace. Health. Greeting. — all in one word, all in one village.'}
+            </p>
+            <p style={{ color: '#786154', margin: '8px 0 20px', fontSize: '0.93rem' }}>
+              {language === 'am'
+                ? 'ለኢትዮጵያ ወጣቶች። ለኢዲር መንፈስ። ለወደፊት ትውልድ።'
+                : 'For Ethiopian youth. Built on the Idir spirit. Designed for belonging.'}
             </p>
             <div className="onboarding-pillars">
-              <span><Heart size={16} /> Community</span>
-              <span><Shield size={16} /> Safety</span>
-              <span><Globe size={16} /> Culture</span>
+              <span><Heart size={16} /> {language === 'am' ? 'ማህበረሰብ' : 'Community'}</span>
+              <span><Shield size={16} /> {language === 'am' ? 'ደህንነት' : 'Safety'}</span>
+              <span><Globe size={16} /> {language === 'am' ? 'ባህል' : 'Culture'}</span>
             </div>
             <div className="lang-toggle">
               <button className={language === 'en' ? 'active' : ''} onClick={() => setLanguage('en')} type="button">
@@ -108,6 +130,11 @@ export function AuthFlow({ onComplete }: Props) {
             <button className="primary wide" onClick={() => setStep('auth')} type="button">
               {t(language, 'getStarted')} <ChevronRight size={18} />
             </button>
+            <p className="fine-print" style={{ marginTop: 14 }}>
+              {language === 'am'
+                ? 'ምንም ምርመራ የለም። ምንም ፍርድ የለም። ይህ ደህንነቱ የተጠበቀ ቦታ ነው።'
+                : 'No diagnosis. No judgment. This is a safe space — not a clinical tool.'}
+            </p>
           </>
         )}
 
@@ -151,7 +178,7 @@ export function AuthFlow({ onComplete }: Props) {
                     autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                     minLength={6}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder={mode === 'signup' ? 'At least 6 characters' : ''}
+                    placeholder={mode === 'signup' ? (language === 'am' ? 'ቢያንስ 6 ቁምፊዎች' : 'At least 6 characters') : ''}
                     required
                     type="password"
                     value={password}
@@ -161,9 +188,9 @@ export function AuthFlow({ onComplete }: Props) {
               {authError && <p className="auth-error">{authError}</p>}
               <button className="primary wide" disabled={submitting} type="submit">
                 {submitting
-                  ? <><Loader2 className="spin" size={16} /> {language === 'am' ? 'እየገባ ነው...' : 'Please wait...'}</>
+                  ? <><Loader2 className="spin" size={16} /> {language === 'am' ? 'እየተጠበቀ ነው...' : 'Please wait...'}</>
                   : mode === 'signup'
-                    ? (language === 'am' ? 'ይቀጥሉ' : 'Continue') + ' →'
+                    ? (language === 'am' ? 'ቀጥሉ →' : 'Continue →')
                     : (language === 'am' ? 'ግባ' : 'Sign in')}
               </button>
             </form>
@@ -184,7 +211,7 @@ export function AuthFlow({ onComplete }: Props) {
             <p style={{ color: '#786154', fontSize: '0.95rem', marginBottom: 20 }}>
               {language === 'am'
                 ? 'ልጦጣዎ ስም የለሽ መሆን ይቻላል — ሆኖም ለክበቦቹ ስምዎ ጠቃሚ ነው።'
-                : 'You can always post anonymously in circles. This name is just for your profile.'}
+                : 'You can always post anonymously. This name is just for your profile.'}
             </p>
             <label className="onboarding-field">
               {language === 'am' ? 'ስም' : 'Display name'}
@@ -203,9 +230,16 @@ export function AuthFlow({ onComplete }: Props) {
                 type="checkbox"
               />
               <span style={{ fontSize: '0.88rem', color: '#786154' }}>
-                {t(language, 'dataConsent')}
+                {language === 'am'
+                  ? 'ለስም የለው የዌልነስ አዝማሚያ እፈቅዳለሁ (አማራጭ፣ መሻር ይቻላል)'
+                  : 'I consent to anonymized wellness trend data (optional, always revocable)'}
               </span>
             </label>
+            <p style={{ fontSize: '0.8rem', color: '#a0896e', marginTop: 8 }}>
+              {language === 'am'
+                ? 'የመረጃ ስብስብ ≥ 150 ተጠቃሚዎችን ይጠይቃል። መንግሥት ሸጠ።'
+                : 'Aggregate data requires ≥ 150 users. No government access. Ever.'}
+            </p>
             <button className="primary wide" disabled={submitting} style={{ marginTop: 22 }} type="submit">
               {submitting
                 ? <Loader2 className="spin" size={16} />
@@ -214,36 +248,57 @@ export function AuthFlow({ onComplete }: Props) {
           </form>
         )}
 
-        {step === 'circle' && (
+        {step === 'circles' && (
           <>
-            <p className="eyebrow">{language === 'am' ? 'ደርሰዋል' : 'Your first circle'}</p>
-            <h2 style={{ marginBottom: 12 }}>
-              {language === 'am' ? 'ክበቡ ይጠብቃዎታል' : 'Your circle is waiting'}
+            <p className="eyebrow">{language === 'am' ? 'ደርሰዋል' : 'Choose your circles'}</p>
+            <h2 style={{ marginBottom: 6 }}>
+              {language === 'am' ? 'ክበቦቹ ይጠብቃዎታል' : 'Your circles are waiting'}
             </h2>
-            <p style={{ color: '#4e382d', fontSize: '0.95rem' }}>
+            <p style={{ color: '#786154', fontSize: '0.9rem', marginBottom: 20 }}>
               {language === 'am'
-                ? 'ወደ Career Anxiety Circle እንቀላቀላለን — 4,200+ ሰዎች ድፍረት ያለ ጥንካሬ ይዘዋል።'
-                : 'We\'re joining you to the Career Anxiety Circle — 4,200+ young Ethiopians rebuilding courage together.'}
+                ? '1-3 ክበቦችን ይምረጡ። ማናቸውም ጊዜ ሌሎችን ማከል ይቻላል።'
+                : 'Pick 1–3 circles to join. You can always add more later.'}
             </p>
-            <div className="onboarding-circle-preview">
-              <strong>Career Anxiety Circle</strong>
-              <span style={{ display: 'block', fontSize: '0.82rem', color: '#786154', margin: '4px 0 8px' }}>
-                Young Professionals • Very active
-              </span>
-              <p style={{ fontSize: '0.9rem', margin: 0 }}>
-                For interviews, burnout, pivots, and being brave without becoming hard. No downvotes. Only support.
-              </p>
+            <div className="circle-picker">
+              {ONBOARDING_CIRCLES.map((circle) => (
+                <button
+                  className={`circle-pick-item ${selectedCircleIds.includes(circle.id) ? 'selected' : ''}`}
+                  key={circle.id}
+                  onClick={() => toggleCircle(circle.id)}
+                  type="button"
+                >
+                  <div className="circle-pick-check">
+                    {selectedCircleIds.includes(circle.id) && <span>✓</span>}
+                  </div>
+                  <div className="circle-pick-info">
+                    <strong>{language === 'am' ? circle.nameAmharic : circle.name}</strong>
+                    {circle.isWomenOnly && (
+                      <span className="women-only-badge">{language === 'am' ? 'ለሴቶች ብቻ' : 'Women only'}</span>
+                    )}
+                    <span className="circle-pick-members">{circle.members.toLocaleString()} {language === 'am' ? 'አባላት' : 'members'}</span>
+                  </div>
+                </button>
+              ))}
             </div>
-            <button className="primary wide" disabled={submitting} onClick={handleCircleJoin} type="button">
+            <button
+              className="primary wide"
+              disabled={submitting || selectedCircleIds.length === 0}
+              onClick={handleCirclesJoin}
+              style={{ marginTop: 20 }}
+              type="button"
+            >
               {submitting
                 ? <Loader2 className="spin" size={16} />
-                : <>{language === 'am' ? 'ክበቡ ይቀላቀሉ' : 'Enter your village'} <ChevronRight size={18} /></>}
+                : <>{language === 'am' ? 'ወደ ሰላም ይግቡ' : 'Enter your village'} <ChevronRight size={18} /></>}
             </button>
+            <p className="fine-print" style={{ marginTop: 12 }}>
+              {selectedCircleIds.length} {language === 'am' ? 'ክበቦች ተመርጠዋል' : 'circles selected'}
+            </p>
           </>
         )}
 
         <div className="onboarding-dots">
-          {(['welcome', 'auth', 'profile', 'circle'] as Step[]).map((s) => (
+          {(['welcome', 'auth', 'profile', 'circles'] as Step[]).map((s) => (
             <span className={step === s ? 'active' : ''} key={s} />
           ))}
         </div>

@@ -1,4 +1,4 @@
-import { Bell, BookMarked, CalendarCheck, Check, CircleUserRound, Crown, FlameKindling, Heart, Hop as Home, Leaf, Loader as Loader2, LogOut, Moon, Mountain, PenLine, Plus, Search, Send, ShieldCheck, Sparkles, Stethoscope, UsersRound, Wifi, WifiOff } from 'lucide-react';
+import { Bell, BookMarked, CalendarCheck, Check, CircleUserRound, Crown, FlameKindling, Heart, Hop as Home, Leaf, Loader as Loader2, LogOut, Moon, Mountain, PenLine, Plus, Search, Send, ShieldCheck, Sparkles, Stethoscope, UsersRound, Users, Wifi, WifiOff } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 import { AuthFlow } from './components/AuthFlow';
 import { CrisisModal } from './components/CrisisModal';
@@ -141,7 +141,7 @@ function HomePage({ app }: { app: AppState }) {
             <button
               className="primary"
               onClick={() => {
-                const womens = app.circles.find((c) => c.id === 'womens-haven');
+                const womens = app.circles.find((c) => c.id === 'womens-wellness' || c.id === 'womens-haven' || c.isWomenOnly);
                 if (womens) app.joinCircle(womens);
                 app.setTab('women');
               }}
@@ -269,13 +269,13 @@ function CycleCard({ cycle }: { cycle: CycleInsight }) {
 function CirclesPage({ app }: { app: AppState }) {
   const [query, setQuery] = useState('');
   const filtered = app.circles.filter((c) =>
-    `${c.name} ${c.category} ${c.description}`.toLowerCase().includes(query.toLowerCase()),
+    `${c.name} ${c.nameAmharic ?? ''} ${c.category} ${c.description}`.toLowerCase().includes(query.toLowerCase()),
   );
 
   return (
     <section className="fade-in">
       <PageIntro
-        eyebrow="Community Circles"
+        eyebrow="Community Circles — ማህበረሰብ ክበቦች"
         title="Find your Mahber for this season."
         text="Idir-inspired peer groups with AI safety, human moderation, and clinical escalation pathways. No downvotes — ever."
       />
@@ -301,6 +301,17 @@ function CirclesPage({ app }: { app: AppState }) {
       </div>
       {app.activeCircle && (
         <section className="circle-feed">
+          <div className="circle-feed-header">
+            <div>
+              <h2>{app.activeCircle.name}</h2>
+              {app.activeCircle.nameAmharic && (
+                <p className="circle-amharic-name">{app.activeCircle.nameAmharic}</p>
+              )}
+            </div>
+            <span className="member-count">
+              <Users size={15} /> {app.activeCircle.members.toLocaleString()}
+            </span>
+          </div>
           <div className="feed-tabs">
             {['Posts', 'Events', 'Resources', 'Members'].map((tab) => (
               <button
@@ -315,6 +326,15 @@ function CirclesPage({ app }: { app: AppState }) {
           </div>
           {app.feedTab === 'Posts' && (
             <div className="stack">
+              <PostComposer
+                anonymous={app.anonymous}
+                composer={app.composer}
+                lang={app.lang}
+                onSubmit={(e) => app.submitPost(e, app.activeCircle?.id)}
+                posting={app.posting}
+                setAnonymous={app.setAnonymous}
+                setComposer={app.setComposer}
+              />
               {app.activePosts.length > 0
                 ? app.activePosts.map((post) => (
                     <WhisperCard key={post.id} language={app.lang} onReact={app.reactToPost} post={post} />
@@ -357,15 +377,23 @@ function CircleCard({
   lang: Language;
 }) {
   return (
-    <article className={`circle-card ${active ? 'selected' : ''}`}>
+    <article className={`circle-card ${active ? 'selected' : ''} ${circle.isWomenOnly ? 'circle-card--women' : ''}`}>
       <span className="tag">{circle.category}</span>
-      <h3>{circle.name}</h3>
+      <h3>{lang === 'am' && circle.nameAmharic ? circle.nameAmharic : circle.name}</h3>
+      {circle.nameAmharic && lang === 'en' && (
+        <p className="circle-amharic-subtitle">{circle.nameAmharic}</p>
+      )}
       <p>{circle.description}</p>
       <div className="circle-stats">
         <span>{circle.members.toLocaleString()} members</span>
         <span>{circle.activity}</span>
       </div>
       {circle.ritual && <p className="ritual-line">{circle.ritual}</p>}
+      {circle.isWomenOnly && (
+        <p className="women-only-note">
+          <Heart size={12} /> Women's safe space — always protected
+        </p>
+      )}
       <button className={joined ? 'joined' : ''} onClick={onJoin} type="button">
         {joined ? t(lang, 'enterCircle') : t(lang, 'joinCircle')}
       </button>
@@ -374,7 +402,7 @@ function CircleCard({
 }
 
 function WomenPage({ app }: { app: AppState }) {
-  const womenPosts = app.posts.filter((p) => p.circleId === 'womens-haven' || p.circle === "Women's Haven");
+  const womenPosts = app.posts.filter((p) => p.circleId === 'womens-wellness' || p.circleId === 'womens-haven' || p.circle === "Women's Wellness Circle" || p.circle === "Women's Haven");
   const phases = [
     { key: 3, label: 'Inner Winter' },
     { key: 8, label: 'Inner Spring' },
@@ -418,7 +446,7 @@ function WomenPage({ app }: { app: AppState }) {
           anonymous={app.anonymous}
           composer={app.composer}
           lang={app.lang}
-          onSubmit={(e) => app.submitPost(e, 'womens-haven')}
+          onSubmit={(e) => app.submitPost(e, 'womens-wellness')}
           posting={app.posting}
           setAnonymous={app.setAnonymous}
           setComposer={app.setComposer}

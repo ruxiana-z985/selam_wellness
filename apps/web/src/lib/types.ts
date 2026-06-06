@@ -6,12 +6,14 @@ export type ReactionType = 'RELATE' | 'ENCOURAGED' | 'THANK_YOU' | 'INSPIRED';
 export type Circle = {
   id: string;
   name: string;
+  nameAmharic?: string;
   category: string;
   members: number;
   activity: string;
   description: string;
   ritual?: string;
   isWomenOnly?: boolean;
+  isFeatured?: boolean;
   joined?: boolean;
 };
 

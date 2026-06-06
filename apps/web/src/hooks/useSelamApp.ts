@@ -22,6 +22,7 @@ import {
   fallbackPractitioners,
   fallbackRevenue,
   fallbackRituals,
+  generateAnonymousAlias,
 } from '../lib/demo-data';
 import { t } from '../lib/i18n';
 import type {
@@ -59,12 +60,13 @@ function formatRelativeTime(iso: string): string {
 function dbPostToCommunityPost(p: DbPost, circles: Circle[]): CommunityPost {
   const circle = circles.find((c) => c.id === p.circle_id);
   const profileData = p.profile as { name?: string; avatar_initial?: string } | null | undefined;
+  const alias = p.anonymous ? generateAnonymousAlias(p.author_id ?? undefined, p.circle_id) : null;
   return {
     id: p.id,
     circleId: p.circle_id,
     circle: circle?.name,
-    author: p.anonymous ? 'Anonymous' : (profileData?.name ?? 'Community Member'),
-    name: p.anonymous ? 'Anonymous' : (profileData?.name ?? 'Community Member'),
+    author: alias ?? (profileData?.name ?? 'Community Member'),
+    name: alias ?? (profileData?.name ?? 'Community Member'),
     time: formatRelativeTime(p.created_at),
     content: p.content,
     anonymous: p.anonymous,
@@ -154,10 +156,10 @@ export function useSelamApp() {
   }, [updateProfile]);
 
   const loadStaticData = useCallback(async () => {
-    const enrichedCircles = fallbackCircles.map((c) => ({ ...c, joined: false }));
+    const enrichedCircles = fallbackCircles.map((c) => ({ ...c, joined: c.joined ?? false }));
     setCircles(enrichedCircles);
-    setActiveCircle(enrichedCircles.find((c) => c.id === 'womens-haven') ?? enrichedCircles[0]);
-    setCycle(fallbackCycle(8));
+    // Start with career-anxiety as the active circle (first non-women's circle)
+    setActiveCircle(enrichedCircles.find((c) => c.id === 'career-anxiety') ?? enrichedCircles[1] ?? enrichedCircles[0]);    setCycle(fallbackCycle(8));
     setRituals(fallbackRituals.map((r) => ({ ...r, text: ritualTexts[r.id] ?? r.description })));
     setSelectedRitual(fallbackRituals.map((r) => ({ ...r, text: ritualTexts[r.id] ?? r.description }))[0] ?? null);
     setExperiences(fallbackExperiences.map((e) => ({ ...e, tone: experienceTone(e.id) })));
@@ -275,12 +277,13 @@ export function useSelamApp() {
       }
     } else {
       const circle = circles.find((c) => c.id === targetId);
+      const alias = anonymous ? generateAnonymousAlias(user?.id, targetId) : null;
       setPosts((prev) => [{
         id: `post-${Date.now()}`,
         circleId: targetId,
         circle: circle?.name,
-        author: anonymous ? 'Anonymous' : profile.name,
-        name: anonymous ? 'Anonymous' : profile.name,
+        author: alias ?? profile.name,
+        name: alias ?? profile.name,
         time: 'now',
         content: composer.trim(),
         anonymous,
