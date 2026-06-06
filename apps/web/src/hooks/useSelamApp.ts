@@ -1,4 +1,17 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import {
+  addReaction,
+  createPost,
+  fetchCirclePosts,
+  fetchReactionCounts,
+  fetchRecentPosts,
+  getJoinedCircleIds,
+  joinCircle as dbJoinCircle,
+  saveBooking,
+  saveJournalEntry,
+  type DbPost,
+} from '../lib/supabase';
 import { api, experienceTone, formatPrice } from '../lib/api';
 import {
   clientSafetyCheck,
@@ -23,7 +36,6 @@ import type {
   Ritual,
   SafetyResult,
   Tab,
-  UserProfile,
 } from '../lib/types';
 
 const ritualTexts: Record<string, string> = {
@@ -34,40 +46,57 @@ const ritualTexts: Record<string, string> = {
   'rest-evening': 'A parchment-soft evening sequence for screens, shoulders, prayer-adjacent silence, and sleep.',
 };
 
-const phaseDays: Record<string, number> = { winter: 3, spring: 8, summer: 16, autumn: 24 };
+function formatRelativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
 
-function loadProfile(): UserProfile {
-  const stored = localStorage.getItem('selam-profile');
-  if (stored) return JSON.parse(stored) as UserProfile;
+function dbPostToCommunityPost(p: DbPost, circles: Circle[]): CommunityPost {
+  const circle = circles.find((c) => c.id === p.circle_id);
+  const profileData = p.profile as { name?: string; avatar_initial?: string } | null | undefined;
   return {
-    name: 'Hana Bekele',
-    email: 'hana@selam.demo',
-    avatarInitial: 'H',
-    language: 'en',
-    isPremium: false,
-    dataConsent: false,
+    id: p.id,
+    circleId: p.circle_id,
+    circle: circle?.name,
+    author: p.anonymous ? 'Anonymous' : (profileData?.name ?? 'Community Member'),
+    name: p.anonymous ? 'Anonymous' : (profileData?.name ?? 'Community Member'),
+    time: formatRelativeTime(p.created_at),
+    content: p.content,
+    anonymous: p.anonymous,
+    reactions: { RELATE: 0, ENCOURAGED: 0, THANK_YOU: 0, INSPIRED: 0 },
+    comments: 0,
   };
 }
 
-function mapPost(post: CommunityPost, circles: Circle[]): CommunityPost {
-  const circle = circles.find((c) => c.id === post.circleId);
-  return {
-    ...post,
-    name: post.author ?? post.name,
-    circle: circle?.name ?? post.circle,
-    reactions: post.reactions ?? { RELATE: 0, ENCOURAGED: 0, THANK_YOU: 0, INSPIRED: 0 },
-  };
+async function enrichPostsWithReactions(posts: CommunityPost[]): Promise<CommunityPost[]> {
+  if (posts.length === 0) return posts;
+  try {
+    const counts = await fetchReactionCounts(posts.map((p) => p.id));
+    return posts.map((p) => ({
+      ...p,
+      reactions: {
+        RELATE: counts[p.id]?.RELATE ?? 0,
+        ENCOURAGED: counts[p.id]?.ENCOURAGED ?? 0,
+        THANK_YOU: counts[p.id]?.THANK_YOU ?? 0,
+        INSPIRED: counts[p.id]?.INSPIRED ?? 0,
+      },
+    }));
+  } catch {
+    return posts;
+  }
 }
 
 export function useSelamApp() {
+  const { user, profile: authProfile, updateProfile, signOut } = useAuth();
+
   const [tab, setTab] = useState<Tab>('home');
-  const [loading, setLoading] = useState(true);
   const [apiOnline, setApiOnline] = useState(false);
-  const [onboarded, setOnboarded] = useState(() => localStorage.getItem('selam-onboarded') === 'true');
-  const [profile, setProfile] = useState<UserProfile>(loadProfile);
-  const [showSelamPlus, setShowSelamPlus] = useState(false);
-  const [crisisModal, setCrisisModal] = useState<SafetyResult | null>(null);
-  const [toast, setToast] = useState('');
+  const [supabaseOnline, setSupabaseOnline] = useState(false);
   const [posting, setPosting] = useState(false);
 
   const [circles, setCircles] = useState<Circle[]>([]);
@@ -86,9 +115,7 @@ export function useSelamApp() {
   const [selectedRitual, setSelectedRitual] = useState<Ritual | null>(null);
   const [cycleDay, setCycleDay] = useState(8);
   const [mood, setMood] = useState({ feeling: 'Tender', energy: '7', note: '' });
-  const [journal, setJournal] = useState<{ id: string; text: string }[]>([
-    { id: 'j1', text: 'Morning felt lighter after coffee breathing.' },
-  ]);
+  const [journal, setJournal] = useState<{ id: string; text: string }[]>([]);
   const [bookingDraft, setBookingDraft] = useState<Booking | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
@@ -97,418 +124,276 @@ export function useSelamApp() {
     "Women's Haven: Inner Spring guide is live.",
   ]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [toast, setToast] = useState('');
+  const [crisisModal, setCrisisModal] = useState<SafetyResult | null>(null);
+  const [showSelamPlus, setShowSelamPlus] = useState(false);
 
-  const lang = profile.language;
+  const lang: Language = ((authProfile?.language as Language) ?? 'en');
+
+  const profile = useMemo(() => ({
+    name: authProfile?.name ?? user?.email?.split('@')[0] ?? 'User',
+    email: user?.email ?? '',
+    avatarInitial: authProfile?.avatar_initial ?? (authProfile?.name ?? user?.email ?? 'U').charAt(0).toUpperCase(),
+    language: lang,
+    isPremium: authProfile?.is_premium ?? false,
+    dataConsent: authProfile?.data_consent ?? false,
+  }), [authProfile, user, lang]);
 
   const showToast = useCallback((message: string) => {
     setToast(message);
     setTimeout(() => setToast(''), 4200);
   }, []);
 
-  const persistProfile = useCallback((next: UserProfile) => {
-    setProfile(next);
-    localStorage.setItem('selam-profile', JSON.stringify(next));
-  }, []);
+  const persistProfile = useCallback(async (next: { name?: string; language?: Language; isPremium?: boolean; dataConsent?: boolean }) => {
+    await updateProfile({
+      ...(next.name !== undefined && { name: next.name }),
+      ...(next.language !== undefined && { language: next.language }),
+      ...(next.isPremium !== undefined && { is_premium: next.isPremium }),
+      ...(next.dataConsent !== undefined && { data_consent: next.dataConsent }),
+    });
+  }, [updateProfile]);
 
-  const completeOnboarding = useCallback(
-    async (data: { name: string; language: Language; dataConsent: boolean }) => {
-      const next = {
-        ...profile,
-        name: data.name,
-        avatarInitial: data.name.charAt(0).toUpperCase(),
-        language: data.language,
-        dataConsent: data.dataConsent,
-      };
-      persistProfile(next);
-      localStorage.setItem('selam-onboarded', 'true');
-      setOnboarded(true);
-      showToast(data.language === 'am' ? 'ወደ ሰላም እንኳን በደህና መጡ!' : 'Welcome to your Selam village.');
-      try {
-        const result = await api.joinCircle('career-anxiety');
-        setCircles((items) =>
-          items.map((c) =>
-            c.id === 'career-anxiety' ? { ...c, joined: true, members: result.members } : c,
-          ),
-        );
-        setActiveCircle((prev) =>
-          prev?.id === 'career-anxiety' ? { ...prev, joined: true } : prev,
-        );
-      } catch {
-        setCircles((items) =>
-          items.map((c) => (c.id === 'career-anxiety' ? { ...c, joined: true, members: c.members + 1 } : c)),
-        );
-      }
-      setTab('circles');
-    },
-    [persistProfile, profile, showToast],
-  );
+  const loadStaticData = useCallback(async () => {
+    const enrichedCircles = fallbackCircles.map((c) => ({ ...c, joined: false }));
+    setCircles(enrichedCircles);
+    setActiveCircle(enrichedCircles.find((c) => c.id === 'womens-haven') ?? enrichedCircles[0]);
+    setCycle(fallbackCycle(8));
+    setRituals(fallbackRituals.map((r) => ({ ...r, text: ritualTexts[r.id] ?? r.description })));
+    setSelectedRitual(fallbackRituals.map((r) => ({ ...r, text: ritualTexts[r.id] ?? r.description }))[0] ?? null);
+    setExperiences(fallbackExperiences.map((e) => ({ ...e, tone: experienceTone(e.id) })));
+    setPractitioners(fallbackPractitioners);
+    setRevenue(fallbackRevenue);
+    const featured = fallbackExperiences.find((e) => e.featured) ?? fallbackExperiences[0];
+    setBookingDraft({ experienceId: featured.id, retreat: featured.title, date: featured.dates[0], guests: 1, payment: 'Telebirr' });
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
     try {
       await api.health();
       setApiOnline(true);
-      const [home, circleList, library, retreatList, practitionerList, revenueData] = await Promise.all([
-        api.home(),
-        api.circles(),
-        api.library(),
-        api.retreats(),
-        api.practitioners(),
-        api.revenue(),
-      ]);
-
-      const enrichedCircles = circleList.map((c) => ({
-        ...c,
-        ritual:
-          c.id === 'career-anxiety'
-            ? 'Sunday courage check-in'
-            : c.id === 'womens-haven'
-              ? 'New moon body listening'
-              : c.id === 'alx-learners'
-                ? 'Friday nervous-system reset'
-                : 'Memory candle circle',
-      }));
-
-      setCircles(enrichedCircles);
-      setActiveCircle(enrichedCircles.find((c) => c.id === 'womens-haven') ?? enrichedCircles[0]);
-      setPosts(home.whispers.map((p) => mapPost(p, enrichedCircles)));
+      const [home, practitionerList] = await Promise.all([api.home(), api.practitioners()]);
       setCycle(home.cycle);
-      setRituals(
-        library.map((r) => ({
-          ...r,
-          text: ritualTexts[r.id] ?? r.description,
-        })),
-      );
-      setSelectedRitual(
-        library.map((r) => ({ ...r, text: ritualTexts[r.id] ?? r.description }))[0] ?? null,
-      );
-      setExperiences(
-        retreatList.map((e) => ({
-          ...e,
-          tone: experienceTone(e.id),
-        })),
-      );
       setPractitioners(practitionerList);
-      setRevenue(revenueData);
-
-      const featured = retreatList.find((e) => e.featured) ?? retreatList[0];
-      if (featured) {
-        setBookingDraft({
-          experienceId: featured.id,
-          retreat: featured.title,
-          date: featured.dates[0],
-          guests: 1,
-          payment: 'Telebirr',
-        });
-      }
     } catch {
       setApiOnline(false);
-      setCircles(fallbackCircles);
-      setActiveCircle(fallbackCircles.find((c) => c.id === 'womens-haven') ?? fallbackCircles[0]);
+    }
+  }, []);
+
+  const loadUserData = useCallback(async (userId: string, currentCircles: Circle[]) => {
+    try {
+      const joinedIds = await getJoinedCircleIds(userId);
+      setCircles((prev) => prev.map((c) => ({ ...c, joined: joinedIds.includes(c.id) })));
+      setSupabaseOnline(true);
+      const dbPosts = await fetchRecentPosts(20);
+      const mapped = dbPosts.map((p) => dbPostToCommunityPost(p, currentCircles));
+      const enriched = await enrichPostsWithReactions(mapped);
+      setPosts(enriched.length > 0 ? enriched : fallbackPosts);
+    } catch {
+      setSupabaseOnline(false);
       setPosts(fallbackPosts);
-      setCycle(fallbackCycle(8));
-      setRituals(fallbackRituals);
-      setSelectedRitual(fallbackRituals[0]);
-      setExperiences(fallbackExperiences);
-      setPractitioners(fallbackPractitioners);
-      setRevenue(fallbackRevenue);
-      const featured = fallbackExperiences.find((e) => e.featured) ?? fallbackExperiences[0];
-      setBookingDraft({
-        experienceId: featured.id,
-        retreat: featured.title,
-        date: featured.dates[0],
-        guests: 1,
-        payment: 'Telebirr',
-      });
-    } finally {
-      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    loadStaticData();
+  }, [loadStaticData]);
 
-  const refreshFeed = useCallback(
-    async (circleId: string) => {
-      if (!apiOnline) return;
+  // Track circles in a ref-like way to avoid stale closures in the second effect
+  const [circlesLoaded, setCirclesLoaded] = useState(false);
+  useEffect(() => {
+    if (circles.length > 0) setCirclesLoaded(true);
+  }, [circles.length]);
+
+  useEffect(() => {
+    if (user && circlesLoaded) {
+      loadUserData(user.id, circles);
+    } else if (!user) {
+      setPosts(fallbackPosts);
+      setSupabaseOnline(false);
+    }
+  }, [user?.id, circlesLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const refreshCircleFeed = useCallback(async (circleId: string) => {
+    try {
+      const dbPosts = await fetchCirclePosts(circleId);
+      const mapped = dbPosts.map((p) => dbPostToCommunityPost(p, circles));
+      const enriched = await enrichPostsWithReactions(mapped);
+      setPosts((prev) => {
+        const others = prev.filter((p) => p.circleId !== circleId);
+        return [...enriched, ...others];
+      });
+    } catch {
+      // keep existing
+    }
+  }, [circles]);
+
+  const joinCircle = useCallback(async (circle: Circle) => {
+    setActiveCircle(circle);
+    setCircles((prev) => prev.map((c) => (c.id === circle.id ? { ...c, joined: true, members: c.members + 1 } : c)));
+    if (user) {
       try {
-        const feed = await api.circleFeed(circleId);
-        setPosts((prev) => {
-          const others = prev.filter((p) => p.circleId !== circleId);
-          return [...feed.posts.map((p) => mapPost(p, circles)), ...others];
-        });
+        await dbJoinCircle(user.id, circle.id);
+        await refreshCircleFeed(circle.id);
       } catch {
-        /* keep local state */
+        // ignore
       }
-    },
-    [apiOnline, circles],
-  );
+    }
+    showToast(`You joined ${circle.name}. The circle makes room for you.`);
+  }, [user, showToast, refreshCircleFeed]);
 
-  const joinCircle = useCallback(
-    async (circle: Circle) => {
-      setActiveCircle(circle);
-      setCircles((items) =>
-        items.map((c) => (c.id === circle.id ? { ...c, joined: true, members: c.members + 1 } : c)),
-      );
-      if (apiOnline) {
-        try {
-          const result = await api.joinCircle(circle.id);
-          showToast(result.message);
-          await refreshFeed(circle.id);
-        } catch {
-          showToast(`You joined ${circle.name}. The circle makes room for you.`);
-        }
-      } else {
-        showToast(`You joined ${circle.name}. The circle makes room for you.`);
-      }
-    },
-    [apiOnline, refreshFeed, showToast],
-  );
+  const submitPost = useCallback(async (event: FormEvent<HTMLFormElement>, circleId?: string) => {
+    event.preventDefault();
+    if (!composer.trim() || posting) return;
+    const targetId = circleId ?? activeCircle?.id;
+    if (!targetId) return;
+    setPosting(true);
 
-  const submitPost = useCallback(
-    async (event: FormEvent<HTMLFormElement>, circleId?: string) => {
-      event.preventDefault();
-      if (!composer.trim() || posting) return;
-      const targetId = circleId ?? activeCircle?.id;
-      if (!targetId) return;
+    const check = clientSafetyCheck(composer.trim());
+    if (!check.safeToPost) {
+      setCrisisModal(check);
+      setPosting(false);
+      return;
+    }
 
-      setPosting(true);
+    if (user && supabaseOnline) {
       try {
-        if (apiOnline) {
-          const result = await api.createPost({
-            circleId: targetId,
-            content: composer.trim(),
-            anonymous,
-          });
-          if (!result.safety.safeToPost) {
-            setCrisisModal(result.safety);
-            setPosting(false);
-            return;
-          }
-          const mapped = mapPost(result, circles);
-          setPosts((items) => [mapped, ...items]);
-          setNotifications((n) => [`Your whisper is live in ${mapped.circle}`, ...n]);
-        } else {
-          const check = clientSafetyCheck(composer.trim());
-          if (!check.safeToPost) {
-            setCrisisModal(check);
-            setPosting(false);
-            return;
-          }
-          const circle = circles.find((c) => c.id === targetId);
-          const newPost: CommunityPost = {
-            id: `post-${Date.now()}`,
-            circleId: targetId,
-            circle: circle?.name,
-            author: anonymous ? 'Anonymous' : profile.name,
-            name: anonymous ? 'Anonymous' : profile.name,
-            time: 'now',
-            content: composer.trim(),
-            anonymous,
-            reactions: { RELATE: 0 },
-            comments: 0,
-          };
-          setPosts((items) => [newPost, ...items]);
+        const created = await createPost({
+          circleId: targetId,
+          authorId: user.id,
+          content: composer.trim(),
+          anonymous,
+          safetyScore: check.score,
+        });
+        if (created) {
+          const profileForPost = anonymous ? null : (authProfile as unknown as DbPost['profile']);
+          const newPost = dbPostToCommunityPost({ ...created, profile: profileForPost }, circles);
+          setPosts((prev) => [newPost, ...prev]);
+          setNotifications((n) => [`Your whisper is live in ${circles.find((c) => c.id === targetId)?.name}`, ...n]);
         }
-        setComposer('');
-        setAnonymous(false);
-        showToast(lang === 'am' ? 'ልጦጣችሁ በክበቡ ውስጥ ተቀመጠ።' : 'Your whisper settled into the circle.');
       } catch {
         showToast('Could not post right now. Try again.');
-      } finally {
         setPosting(false);
-      }
-    },
-    [activeCircle?.id, anonymous, circles, composer, apiOnline, lang, posting, profile.name, showToast],
-  );
-
-  const reactToPost = useCallback(
-    async (id: string, type: ReactionType = 'RELATE') => {
-      setPosts((items) =>
-        items.map((post) =>
-          post.id === id
-            ? { ...post, reactions: { ...post.reactions, [type]: (post.reactions[type] ?? 0) + 1 } }
-            : post,
-        ),
-      );
-      if (apiOnline) {
-        try {
-          await api.reactToPost(id, type);
-        } catch {
-          /* local update kept */
-        }
-      }
-    },
-    [apiOnline],
-  );
-
-  const saveRitual = useCallback(
-    (id: string) => {
-      const ritual = rituals.find((r) => r.id === id);
-      if (ritual?.premium && !profile.isPremium) {
-        setShowSelamPlus(true);
         return;
       }
-      setSaved((items) => (items.includes(id) ? items.filter((item) => item !== id) : [...items, id]));
-    },
-    [profile.isPremium, rituals],
-  );
+    } else {
+      const circle = circles.find((c) => c.id === targetId);
+      setPosts((prev) => [{
+        id: `post-${Date.now()}`,
+        circleId: targetId,
+        circle: circle?.name,
+        author: anonymous ? 'Anonymous' : profile.name,
+        name: anonymous ? 'Anonymous' : profile.name,
+        time: 'now',
+        content: composer.trim(),
+        anonymous,
+        reactions: { RELATE: 0, ENCOURAGED: 0, THANK_YOU: 0, INSPIRED: 0 },
+        comments: 0,
+      }, ...prev]);
+    }
 
-  const saveMood = useCallback(
-    async (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      const text = `${mood.feeling}, energy ${mood.energy}/10 — ${mood.note || 'No note, just presence.'}`;
-      const entry = { id: `j-${Date.now()}`, text };
-      setJournal((items) => [entry, ...items]);
-      setMood({ ...mood, note: '' });
-      if (apiOnline) {
-        try {
-          await api.createJournal({
-            mood: mood.feeling,
-            energy: Number(mood.energy),
-            prompt: cycle?.prompt ?? 'What gave you peace today?',
-            response: mood.note,
-          });
-        } catch {
-          /* local kept */
-        }
-      }
-      showToast(lang === 'am' ? 'በግላዊነት ተቀምጧል።' : 'Journal entry saved privately.');
-    },
-    [apiOnline, cycle?.prompt, lang, mood, showToast],
-  );
+    setComposer('');
+    setAnonymous(false);
+    showToast(lang === 'am' ? 'ልጦጣችሁ በክበቡ ውስጥ ተቀመጠ።' : 'Your whisper settled into the circle.');
+    setPosting(false);
+  }, [activeCircle?.id, anonymous, authProfile, circles, composer, lang, posting, profile.name, showToast, supabaseOnline, user]);
 
-  const reserveRetreat = useCallback(
-    async (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      if (!bookingDraft) return;
-      setPaymentProcessing(true);
-      showToast(t(lang, 'paymentProcessing'));
+  const reactToPost = useCallback(async (id: string, type: ReactionType = 'RELATE') => {
+    setPosts((prev) => prev.map((p) =>
+      p.id === id ? { ...p, reactions: { ...p.reactions, [type]: (p.reactions[type] ?? 0) + 1 } } : p,
+    ));
+    if (user && supabaseOnline) {
+      try { await addReaction(id, user.id, type); } catch { /* keep local */ }
+    }
+  }, [user, supabaseOnline]);
 
-      await new Promise((r) => setTimeout(r, 1400));
+  const saveRitual = useCallback((id: string) => {
+    const ritual = rituals.find((r) => r.id === id);
+    if (ritual?.premium && !authProfile?.is_premium) { setShowSelamPlus(true); return; }
+    setSaved((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }, [authProfile?.is_premium, rituals]);
 
+  const saveMood = useCallback(async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const text = `${mood.feeling}, energy ${mood.energy}/10 — ${mood.note || 'No note, just presence.'}`;
+    setJournal((prev) => [{ id: `j-${Date.now()}`, text }, ...prev]);
+    setMood((prev) => ({ ...prev, note: '' }));
+    if (user && supabaseOnline) {
       try {
-        if (apiOnline) {
-          const result = await api.createBooking(bookingDraft);
-          const booking = {
-            ...bookingDraft,
-            id: result.id,
-            paymentRef: result.paymentRef,
-            total: result.total,
-            retreat: bookingDraft.retreat,
-          };
-          setBookings((items) => [booking, ...items]);
-          setNotifications((n) => [`${result.paymentRef}: ${bookingDraft.retreat}`, ...n]);
-          showToast(`${t(lang, 'bookingConfirmed')} — ${result.paymentRef}`);
-        } else {
-          const exp = experiences.find((e) => e.id === bookingDraft.experienceId);
-          const booking = {
-            ...bookingDraft,
-            id: `booking-${Date.now()}`,
-            total: (exp?.price ?? 0) * bookingDraft.guests,
-            paymentRef: `TB-${Date.now().toString(36).toUpperCase()}`,
-          };
-          setBookings((items) => [booking, ...items]);
-          showToast(`${t(lang, 'bookingConfirmed')} — ${booking.paymentRef}`);
-        }
-      } catch {
-        showToast('Booking failed. Please try again.');
-      } finally {
-        setPaymentProcessing(false);
-      }
-    },
-    [apiOnline, bookingDraft, experiences, lang, showToast],
-  );
+        await saveJournalEntry({ userId: user.id, mood: mood.feeling, energy: Number(mood.energy), prompt: cycle?.prompt ?? 'What gave you peace today?', response: mood.note });
+      } catch { /* local kept */ }
+    }
+    showToast(lang === 'am' ? 'በግላዊነት ተቀምጧል።' : 'Journal entry saved privately.');
+  }, [cycle?.prompt, lang, mood, showToast, supabaseOnline, user]);
+
+  const reserveRetreat = useCallback(async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!bookingDraft) return;
+    setPaymentProcessing(true);
+    showToast(t(lang, 'paymentProcessing'));
+    await new Promise((r) => setTimeout(r, 1400));
+
+    const exp = experiences.find((e) => e.id === bookingDraft.experienceId);
+    const paymentRef = `TB-${Date.now().toString(36).toUpperCase()}`;
+    const total = (exp?.price ?? 0) * bookingDraft.guests;
+    const booking: Booking = { ...bookingDraft, id: `booking-${Date.now()}`, total, paymentRef };
+    setBookings((prev) => [booking, ...prev]);
+    setNotifications((n) => [`${paymentRef}: ${bookingDraft.retreat}`, ...n]);
+    showToast(`${t(lang, 'bookingConfirmed')} — ${paymentRef}`);
+
+    if (user && supabaseOnline && exp) {
+      try {
+        await saveBooking({ userId: user.id, experienceId: bookingDraft.experienceId, experienceTitle: bookingDraft.retreat ?? exp.title, date: bookingDraft.date, guests: bookingDraft.guests, payment: bookingDraft.payment, total, paymentRef });
+      } catch { /* local kept */ }
+    }
+    setPaymentProcessing(false);
+  }, [bookingDraft, experiences, lang, showToast, supabaseOnline, user]);
 
   const upgradePremium = useCallback(() => {
-    persistProfile({ ...profile, isPremium: true });
+    persistProfile({ isPremium: true });
     setShowSelamPlus(false);
     showToast('Selam+ activated — ETB 175/month. Full library unlocked.');
-  }, [persistProfile, profile, showToast]);
+  }, [persistProfile, showToast]);
 
-  const updateCycleDay = useCallback(
-    async (day: number) => {
-      setCycleDay(day);
-      if (apiOnline) {
-        try {
-          const insight = await api.cycle(day);
-          setCycle(insight);
-        } catch {
-          setCycle(fallbackCycle(day));
-        }
-      } else {
-        setCycle(fallbackCycle(day));
-      }
-    },
-    [apiOnline],
-  );
+  const updateCycleDay = useCallback(async (day: number) => {
+    setCycleDay(day);
+    if (apiOnline) {
+      try { setCycle(await api.cycle(day)); } catch { setCycle(fallbackCycle(day)); }
+    } else {
+      setCycle(fallbackCycle(day));
+    }
+  }, [apiOnline]);
 
   const joinedCircles = useMemo(() => circles.filter((c) => c.joined), [circles]);
-
   const activePosts = useMemo(() => {
     if (!activeCircle) return posts;
     return posts.filter((p) => p.circleId === activeCircle.id || p.circle === activeCircle.name);
   }, [activeCircle, posts]);
 
   return {
-    tab,
-    setTab,
-    loading,
-    apiOnline,
-    onboarded,
-    profile,
-    lang,
-    showSelamPlus,
-    setShowSelamPlus,
-    crisisModal,
-    setCrisisModal,
-    toast,
-    setToast,
+    tab, setTab,
+    loading: false,
+    apiOnline, supabaseOnline,
+    profile, lang,
+    showSelamPlus, setShowSelamPlus,
+    crisisModal, setCrisisModal,
+    toast, setToast,
     posting,
-    circles,
-    activeCircle,
-    setActiveCircle,
-    posts,
-    activePosts,
-    cycle,
-    cycleDay,
-    rituals,
-    experiences,
-    practitioners,
-    revenue,
-    feedTab,
-    setFeedTab,
-    composer,
-    setComposer,
-    anonymous,
-    setAnonymous,
-    saved,
-    selectedRitual,
-    setSelectedRitual,
-    mood,
-    setMood,
+    circles, activeCircle, setActiveCircle,
+    posts, activePosts,
+    cycle, cycleDay,
+    rituals, experiences, practitioners, revenue,
+    feedTab, setFeedTab,
+    composer, setComposer,
+    anonymous, setAnonymous,
+    saved, selectedRitual, setSelectedRitual,
+    mood, setMood,
     journal,
-    bookingDraft,
-    setBookingDraft,
-    bookings,
-    paymentProcessing,
-    notifications,
-    showNotifications,
-    setShowNotifications,
+    bookingDraft, setBookingDraft,
+    bookings, paymentProcessing,
+    notifications, showNotifications, setShowNotifications,
     joinedCircles,
-    completeOnboarding,
-    joinCircle,
-    submitPost,
-    reactToPost,
-    saveRitual,
-    saveMood,
-    reserveRetreat,
-    upgradePremium,
-    updateCycleDay,
-    showToast,
-    formatPrice,
-    refreshFeed,
-    persistProfile,
+    joinCircle, submitPost, reactToPost,
+    saveRitual, saveMood, reserveRetreat,
+    upgradePremium, updateCycleDay,
+    showToast, formatPrice,
+    persistProfile, signOut, user,
   };
 }

@@ -1,46 +1,19 @@
-import {
-  Bell,
-  BookMarked,
-  CalendarCheck,
-  Check,
-  CircleUserRound,
-  Crown,
-  FlameKindling,
-  Heart,
-  Home,
-  Leaf,
-  Loader2,
-  Moon,
-  Mountain,
-  PenLine,
-  Plus,
-  Search,
-  Send,
-  ShieldCheck,
-  Sparkles,
-  Stethoscope,
-  UsersRound,
-  Wifi,
-  WifiOff,
-} from 'lucide-react';
+import { Bell, BookMarked, CalendarCheck, Check, CircleUserRound, Crown, FlameKindling, Heart, Hop as Home, Leaf, Loader as Loader2, LogOut, Moon, Mountain, PenLine, Plus, Search, Send, ShieldCheck, Sparkles, Stethoscope, UsersRound, Wifi, WifiOff } from 'lucide-react';
 import { FormEvent, useState } from 'react';
+import { AuthFlow } from './components/AuthFlow';
 import { CrisisModal } from './components/CrisisModal';
-import { Onboarding } from './components/Onboarding';
 import { SelamPlus } from './components/SelamPlus';
 import { WhisperCard } from './components/WhisperCard';
+import { useAuth } from './context/AuthContext';
 import { useSelamApp } from './hooks/useSelamApp';
 import { formatPrice } from './lib/api';
 import { t } from './lib/i18n';
 import type { Circle, CycleInsight, Experience, Language, Practitioner, Ritual, Tab } from './lib/types';
 
 function App() {
-  const app = useSelamApp();
+  const { loading: authLoading, user } = useAuth();
 
-  if (!app.onboarded) {
-    return <Onboarding onComplete={app.completeOnboarding} />;
-  }
-
-  if (app.loading) {
+  if (authLoading) {
     return (
       <main className="loading-screen">
         <span className="brand-mark">ሰ</span>
@@ -49,6 +22,16 @@ function App() {
       </main>
     );
   }
+
+  if (!user) {
+    return <AuthFlow onComplete={() => { /* user state updates automatically via onAuthStateChange */ }} />;
+  }
+
+  return <AppShell />;
+}
+
+function AppShell() {
+  const app = useSelamApp();
 
   return (
     <main>
@@ -108,8 +91,8 @@ function Header({ app }: { app: AppState }) {
         ))}
       </nav>
       <div className="top-actions">
-        <span className={`api-status ${app.apiOnline ? 'online' : 'offline'}`} title={app.apiOnline ? 'API connected' : 'Demo mode'}>
-          {app.apiOnline ? <Wifi size={16} /> : <WifiOff size={16} />}
+        <span className={`api-status ${app.supabaseOnline ? 'online' : 'offline'}`} title={app.supabaseOnline ? 'Connected' : 'Demo mode'}>
+          {app.supabaseOnline ? <Wifi size={16} /> : <WifiOff size={16} />}
         </span>
         {app.profile.isPremium && (
           <button className="premium-badge" onClick={() => app.setShowSelamPlus(true)} type="button">
@@ -132,7 +115,7 @@ function Header({ app }: { app: AppState }) {
             ))}
           </div>
         )}
-        <button className="avatar" onClick={() => app.setTab('profile')} type="button">
+        <button className="avatar" onClick={() => app.setTab('profile')} type="button" title={app.profile.name}>
           {app.profile.avatarInitial}
         </button>
       </div>
@@ -143,6 +126,8 @@ function Header({ app }: { app: AppState }) {
 function HomePage({ app }: { app: AppState }) {
   const featured = app.experiences.find((e) => e.featured) ?? app.experiences[0];
   const cycle = app.cycle;
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   return (
     <section className="fade-in village-home">
@@ -150,6 +135,7 @@ function HomePage({ app }: { app: AppState }) {
         <div className="hero-copy">
           <p className="eyebrow">{t(app.lang, 'peace')}</p>
           <h1>{t(app.lang, 'heroTitle')}</h1>
+          <p className="hero-greeting">{greeting}, {app.profile.name}. Your circle has been waiting.</p>
           <p>{t(app.lang, 'heroText')}</p>
           <div className="hero-actions">
             <button
@@ -219,9 +205,9 @@ function HomePage({ app }: { app: AppState }) {
 
       <section className="story-ribbon">
         {[
-          ['Belong', 'Find a circle that speaks your language and season.'],
+          ['Belong', 'Find a circle that speaks your language and season — Idir-inspired, judgment-free.'],
           ['Listen', cycle ? `Today: ${cycle.phase}. ${cycle.suggestion ?? cycle.prompt}` : 'Cycle wisdom awaits.'],
-          ['Heal', 'Book practitioners, Kuriftu retreats, and rituals beyond the screen.'],
+          ['Heal', 'From Kuriftu retreats to coffee ceremony calm — wellness that feels like coming home.'],
         ].map(([title, text]) => (
           <article key={title}>
             <span>{title}</span>
@@ -242,7 +228,8 @@ function HomePage({ app }: { app: AppState }) {
               <ShieldCheck />
               <div>
                 <strong>
-                  {app.joinedCircles.length} circles joined • active: {app.activeCircle?.name}
+                  {app.joinedCircles.length} circle{app.joinedCircles.length !== 1 ? 's' : ''} joined
+                  {app.activeCircle ? ` • active: ${app.activeCircle.name}` : ''}
                 </strong>
                 <p>No downvotes. No public shaming. Supportive reactions only. AI + human moderation.</p>
               </div>
@@ -290,7 +277,7 @@ function CirclesPage({ app }: { app: AppState }) {
       <PageIntro
         eyebrow="Community Circles"
         title="Find your Mahber for this season."
-        text="Edir-inspired peer groups with AI safety, human moderation, and clinical escalation pathways."
+        text="Idir-inspired peer groups with AI safety, human moderation, and clinical escalation pathways. No downvotes — ever."
       />
       <div className="searchbar">
         <Search size={18} />
@@ -328,9 +315,11 @@ function CirclesPage({ app }: { app: AppState }) {
           </div>
           {app.feedTab === 'Posts' && (
             <div className="stack">
-              {app.activePosts.map((post) => (
-                <WhisperCard key={post.id} language={app.lang} onReact={app.reactToPost} post={post} />
-              ))}
+              {app.activePosts.length > 0
+                ? app.activePosts.map((post) => (
+                    <WhisperCard key={post.id} language={app.lang} onReact={app.reactToPost} post={post} />
+                  ))
+                : <p className="timeline-entry" style={{ textAlign: 'center', padding: '32px 0' }}>Be the first to share in this circle.</p>}
             </div>
           )}
           {app.feedTab === 'Events' && (
@@ -342,7 +331,7 @@ function CirclesPage({ app }: { app: AppState }) {
           {app.feedTab === 'Resources' && (
             <div className="stack">
               <article className="soft-panel">Circle guidelines — How we hold space without shame</article>
-              <article className="soft-panel">Crisis support pathways — Amanuel Hospital referral</article>
+              <article className="soft-panel">Crisis support pathways — Amanuel Hospital referral: 0116-62-52-09</article>
             </div>
           )}
           {app.feedTab === 'Members' && (
@@ -398,13 +387,13 @@ function WomenPage({ app }: { app: AppState }) {
       <PageIntro
         eyebrow="Flagship Feature"
         title="Women's Haven"
-        text="Cycle wisdom, hormonal wellness, certified practitioners, and protected peer support — Ethiopia's FemTech anchor."
+        text="Cycle wisdom, hormonal wellness, certified practitioners, and protected peer support — Ethiopia's first culturally grounded FemTech space."
       />
       <div className="two-column">
         {app.cycle && <CycleCard cycle={app.cycle} />}
         <article className="soft-panel cycle-dashboard">
           <h3>Choose today's inner season</h3>
-          <p>Selam frames cycle tracking as relationship, not surveillance.</p>
+          <p>Your cycle is not a problem to solve. It is a rhythm to know.</p>
           <div className="phase-buttons">
             {phases.map((p) => (
               <button
@@ -437,9 +426,11 @@ function WomenPage({ app }: { app: AppState }) {
         <section>
           <SectionTitle title="Women's whispers" />
           <div className="stack">
-            {womenPosts.map((post) => (
-              <WhisperCard key={post.id} language={app.lang} onReact={app.reactToPost} post={post} />
-            ))}
+            {womenPosts.length > 0
+              ? womenPosts.map((post) => (
+                  <WhisperCard key={post.id} language={app.lang} onReact={app.reactToPost} post={post} />
+                ))
+              : <p className="timeline-entry" style={{ textAlign: 'center', padding: '32px 0' }}>Be the first voice in this safe space.</p>}
           </div>
         </section>
       </div>
@@ -500,7 +491,7 @@ function WellnessPage({ app }: { app: AppState }) {
       <PageIntro
         eyebrow="Daily Selam"
         title="A ritual library, not content sludge."
-        text="Coffee ceremony calm, teff nutrition, career resets — culturally familiar therapeutic objects."
+        text="Coffee ceremony calm, teff nutrition, career resets — culturally familiar therapeutic objects that belong to you."
       />
       <div className="ritual-layout">
         <div className="ritual-list">
@@ -567,11 +558,11 @@ function WellnessPage({ app }: { app: AppState }) {
         </form>
         <article className="soft-panel">
           <h3>Private timeline</h3>
-          {app.journal.map((entry) => (
-            <p className="timeline-entry" key={entry.id}>
-              {entry.text}
-            </p>
-          ))}
+          {app.journal.length > 0
+            ? app.journal.map((entry) => (
+                <p className="timeline-entry" key={entry.id}>{entry.text}</p>
+              ))
+            : <p className="timeline-entry">Your private wellness map starts here.</p>}
         </article>
       </div>
     </section>
@@ -682,7 +673,7 @@ function PractitionersPage({ app }: { app: AppState }) {
       <PageIntro
         eyebrow="Certified Practitioners"
         title="Human care, culturally grounded."
-        text="Partnerships with Amanuel Hospital pathway. Book cycle educators, coaches, and wellness practitioners."
+        text="Partnerships with Amanuel Hospital pathway. Book cycle educators, coaches, and wellness practitioners — in Amharic and English."
       />
       <div className="practitioner-grid">
         {app.practitioners.map((p) => (
@@ -731,48 +722,48 @@ function ProfilePage({ app }: { app: AppState }) {
       <PageIntro
         eyebrow="Wellness Identity"
         title={`${app.profile.name}'s private Selam map.`}
-        text="A healing record, not a social scoreboard. Data ethics dashboard for investor transparency."
+        text="A healing record, not a social scoreboard. Your data is yours — never sold individually, never shared with governments."
       />
       <div className="profile-grid">
         <article className="profile-card">
           <div className="avatar xl">{app.profile.avatarInitial}</div>
           <h3>{app.profile.name}</h3>
-          <p>Building a life that feels successful and peaceful.</p>
+          <p>{app.profile.email}</p>
           {app.profile.isPremium && (
             <span className="premium-badge large">
               <Crown size={16} /> Selam+ Member
             </span>
           )}
           <div className="profile-stats">
-            <span>
-              <b>{app.joinedCircles.length}</b> circles
-            </span>
-            <span>
-              <b>{app.saved.length}</b> saved
-            </span>
-            <span>
-              <b>{app.bookings.length}</b> bookings
-            </span>
-            <span>
-              <b>{app.journal.length}</b> entries
-            </span>
+            <span><b>{app.joinedCircles.length}</b> circles</span>
+            <span><b>{app.saved.length}</b> saved</span>
+            <span><b>{app.bookings.length}</b> bookings</span>
+            <span><b>{app.journal.length}</b> entries</span>
           </div>
           <div className="lang-toggle profile-lang">
             <button
               className={app.lang === 'en' ? 'active' : ''}
-              onClick={() => app.persistProfile({ ...app.profile, language: 'en' })}
+              onClick={() => app.persistProfile({ language: 'en' })}
               type="button"
             >
               English
             </button>
             <button
               className={app.lang === 'am' ? 'active' : ''}
-              onClick={() => app.persistProfile({ ...app.profile, language: 'am' })}
+              onClick={() => app.persistProfile({ language: 'am' })}
               type="button"
             >
               አማርኛ
             </button>
           </div>
+          <button
+            className="ghost"
+            onClick={() => app.signOut()}
+            style={{ marginTop: 16, width: '100%' }}
+            type="button"
+          >
+            <LogOut size={16} /> Sign out
+          </button>
         </article>
         <article className="soft-panel">
           <h3>Recent path</h3>
@@ -780,11 +771,13 @@ function ProfilePage({ app }: { app: AppState }) {
             ...app.joinedCircles.map((c) => `Joined ${c.name}`),
             ...app.saved.map((id) => `Saved ${id}`),
             ...app.bookings.map((b) => `Booked ${b.retreat}`),
-          ].map((item) => (
-            <p className="timeline-entry" key={item}>
-              {item}
-            </p>
+            ...app.journal.map((j) => j.text.slice(0, 60) + '...'),
+          ].slice(0, 8).map((item, i) => (
+            <p className="timeline-entry" key={i}>{item}</p>
           ))}
+          {app.joinedCircles.length === 0 && app.saved.length === 0 && app.bookings.length === 0 && (
+            <p className="timeline-entry">Your wellness journey starts here.</p>
+          )}
         </article>
       </div>
 
