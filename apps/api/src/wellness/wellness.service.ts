@@ -45,7 +45,7 @@ export class WellnessService {
   async circles() {
     const dbCircles = await this.safeDb(() => this.prisma.circle.findMany({ orderBy: { members: 'desc' } }), circles);
     const joined = getJoinedCircleIds();
-    return dbCircles.map((circle) => ({
+    return (dbCircles as typeof circles).map((circle) => ({
       ...circle,
       joined: joined.includes(circle.id),
     }));
