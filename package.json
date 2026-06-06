@@ -1,0 +1,24 @@
+{
+  "name": "selam-wellness",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Selam Wellness — a digital Ethiopian wellness village MVP.",
+  "workspaces": [
+    "apps/api",
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @selam/web",
+    "dev:api": "npm run start:dev --workspace @selam/api",
+    "dev:web": "npm run dev --workspace @selam/web",
+    "build": "npm run build --workspace @selam/api && npm run build --workspace @selam/web",
+    "build:api": "npm run build --workspace @selam/api",
+    "build:web": "npm run build --workspace @selam/web",
+    "db:generate": "npm run db:generate --workspace @selam/api",
+    "db:migrate": "npm run db:migrate --workspace @selam/api",
+    "db:seed": "npm run db:seed --workspace @selam/api"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

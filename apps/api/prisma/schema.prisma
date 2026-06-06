@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ReactionType {
+  RELATE
+  ENCOURAGED
+  THANK_YOU
+  INSPIRED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model User {
+  id           String         @id @default(cuid())
+  name         String
+  email        String         @unique
+  avatarUrl    String?
+  language     String         @default("English")
+  createdAt    DateTime       @default(now())
+  posts        Post[]
+  journal      JournalEntry[]
+  bookings     Booking[]
+  circleJoins  CircleMember[]
+}
+
+model Circle {
+  id          String         @id @default(cuid())
+  name        String
+  category    String
+  description String
+  members     Int            @default(0)
+  activity    String
+  isWomenOnly Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+  posts       Post[]
+  joins       CircleMember[]
+}
+
+model CircleMember {
+  id       String @id @default(cuid())
+  userId   String
+  circleId String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  circle   Circle @relation(fields: [circleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, circleId])
+}
+
+model Post {
+  id           String     @id @default(cuid())
+  authorId     String?
+  circleId     String
+  content      String
+  anonymous    Boolean    @default(false)
+  safetyScore  Int        @default(100)
+  createdAt    DateTime   @default(now())
+  author       User?      @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  circle       Circle     @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  reactions    Reaction[]
+}
+
+model Reaction {
+  id        String       @id @default(cuid())
+  postId    String
+  type      ReactionType
+  createdAt DateTime     @default(now())
+  post      Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+}
+
+model Practitioner {
+  id             String  @id @default(cuid())
+  name           String
+  title          String
+  specialization String
+  languages      String[]
+  rating         Float   @default(5)
+  price          Int
+  availability   String
+  avatarUrl      String?
+}
+
+model Experience {
+  id          String    @id @default(cuid())
+  title       String
+  category    String
+  location    String
+  price       Int
+  description String
+  imageUrl     String?
+  dates       String[]
+  bookings    Booking[]
+}
+
+model Booking {
+  id           String        @id @default(cuid())
+  userId       String?
+  experienceId String
+  date         String
+  guests       Int
+  payment      String
+  status       BookingStatus @default(PENDING)
+  createdAt    DateTime      @default(now())
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  experience   Experience    @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+}
+
+model JournalEntry {
+  id        String   @id @default(cuid())
+  userId    String?
+  mood      String
+  energy    Int
+  prompt    String
+  response  String
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model WellnessContent {
+  id          String @id @default(cuid())
+  title       String
+  category    String
+  format      String
+  duration    String
+  description String
+  premium     Boolean @default(false)
+}

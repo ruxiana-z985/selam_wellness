@@ -1,0 +1,1494 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --coffee: #7d3d1f;
+  --coffee-dark: #3b1d12;
+  --green: #173e1d;
+  --green-soft: #6f8764;
+  --clay: #b96b45;
+  --rose-clay: #df9b7e;
+  --sand: #d8ad67;
+  --cream: #fff8ed;
+  --ivory: #f7efe3;
+  --paper: rgba(255, 250, 241, 0.82);
+  --ink: #261a14;
+  --muted: #786154;
+  --line: rgba(125, 61, 31, 0.17);
+  --shadow: 0 28px 80px rgba(63, 30, 15, 0.13);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--ivory);
+  color: var(--ink);
+  font-family: 'Manrope', system-ui, sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+main {
+  min-height: 100vh;
+  overflow-x: hidden;
+  padding-bottom: 110px;
+  position: relative;
+}
+
+.tibeb {
+  background:
+    linear-gradient(180deg, rgba(255, 248, 237, 0.68), rgba(255, 248, 237, 0.3)),
+    url('/tibeb-pattern.svg') center top / 760px auto repeat;
+  inset: 0;
+  opacity: 0.94;
+  pointer-events: none;
+  position: fixed;
+}
+
+.tibeb::after {
+  background:
+    radial-gradient(circle at 10% 8%, rgba(216, 173, 103, 0.18), transparent 28%),
+    radial-gradient(circle at 86% 16%, rgba(185, 107, 69, 0.12), transparent 30%),
+    radial-gradient(circle at 50% 80%, rgba(111, 135, 100, 0.13), transparent 36%);
+  content: '';
+  inset: 0;
+  position: absolute;
+}
+
+.topbar {
+  align-items: center;
+  backdrop-filter: blur(22px);
+  background: rgba(255, 248, 237, 0.76);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  height: 76px;
+  justify-content: space-between;
+  padding: 0 clamp(18px, 5vw, 64px);
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.brand,
+.desktop-nav button,
+.top-actions button,
+.bottom-nav button {
+  background: none;
+  border: 0;
+}
+
+.brand {
+  align-items: center;
+  color: var(--green);
+  display: flex;
+  font-size: 1.3rem;
+  font-weight: 900;
+  gap: 12px;
+}
+
+.brand-mark {
+  align-items: center;
+  background:
+    radial-gradient(circle at 50% 44%, var(--sand) 0 3px, transparent 4px),
+    var(--green);
+  border-radius: 44% 56% 48% 52%;
+  color: var(--cream);
+  display: inline-flex;
+  font-family: 'Cormorant Garamond', serif;
+  height: 38px;
+  justify-content: center;
+  width: 38px;
+}
+
+.desktop-nav {
+  display: flex;
+  gap: 8px;
+}
+
+.desktop-nav button {
+  border-radius: 999px;
+  color: var(--muted);
+  font-weight: 800;
+  padding: 11px 16px;
+}
+
+.desktop-nav button.active {
+  background: rgba(23, 62, 29, 0.09);
+  color: var(--green);
+}
+
+.top-actions {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+}
+
+.avatar,
+.mini-avatar {
+  align-items: center;
+  background: linear-gradient(140deg, var(--coffee-dark), var(--clay));
+  border: 3px solid rgba(255, 248, 237, 0.9);
+  border-radius: 50%;
+  color: white;
+  display: inline-flex;
+  font-weight: 900;
+  justify-content: center;
+}
+
+.avatar {
+  height: 42px;
+  width: 42px;
+}
+
+.xl {
+  font-size: 2rem;
+  height: 96px;
+  width: 96px;
+}
+
+.page-shell {
+  margin: 0 auto;
+  max-width: 1460px;
+  padding: 54px clamp(18px, 5vw, 64px) 88px;
+  position: relative;
+  z-index: 1;
+}
+
+.fade-in {
+  animation: pageIn 420ms ease both;
+}
+
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+h1,
+h2,
+h3 {
+  color: var(--coffee);
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  line-height: 0.94;
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(3.4rem, 8vw, 7.6rem);
+  letter-spacing: -0.055em;
+}
+
+h2 {
+  font-size: clamp(2.2rem, 4.4vw, 4.2rem);
+  letter-spacing: -0.04em;
+}
+
+h3 {
+  font-size: 1.8rem;
+}
+
+p {
+  line-height: 1.75;
+}
+
+.eyebrow {
+  color: var(--green);
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  margin: 0 0 14px;
+  text-transform: uppercase;
+}
+
+.hero-village {
+  align-items: center;
+  display: grid;
+  gap: 64px;
+  grid-template-columns: minmax(0, 0.94fr) minmax(440px, 1fr);
+  min-height: calc(100vh - 180px);
+}
+
+.hero-copy {
+  max-width: 720px;
+}
+
+.hero-copy p:not(.eyebrow),
+.page-intro p:last-child {
+  color: #4e382d;
+  font-size: clamp(1.05rem, 1.45vw, 1.3rem);
+  max-width: 780px;
+}
+
+.hero-actions,
+.reaction-row,
+.form-footer,
+.circle-stats,
+.profile-stats,
+.ceremony-steps {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.primary,
+.ghost,
+.circle-card button,
+.create-post button,
+.journal-card button,
+.booking-form button,
+.ritual-reader button {
+  align-items: center;
+  border-radius: 999px;
+  display: inline-flex;
+  font-weight: 900;
+  gap: 8px;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 22px;
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.primary,
+.circle-card button,
+.create-post button,
+.journal-card button,
+.booking-form button {
+  background: var(--coffee);
+  border: 1px solid var(--coffee);
+  box-shadow: 0 12px 28px rgba(125, 61, 31, 0.18);
+  color: white;
+}
+
+.ghost {
+  background: rgba(255, 250, 241, 0.66);
+  border: 1px solid var(--line);
+  color: var(--coffee);
+}
+
+button:hover {
+  transform: translateY(-2px);
+}
+
+.courtyard {
+  aspect-ratio: 1;
+  border-radius: 45% 55% 52% 48%;
+  min-height: 560px;
+  position: relative;
+}
+
+.courtyard::before {
+  background:
+    radial-gradient(circle at center, rgba(255, 248, 237, 0.94) 0 18%, rgba(216, 173, 103, 0.2) 19% 20%, transparent 21%),
+    conic-gradient(from -20deg, rgba(185, 107, 69, 0.18), rgba(23, 62, 29, 0.12), rgba(216, 173, 103, 0.22), rgba(185, 107, 69, 0.18));
+  border: 1px solid rgba(125, 61, 31, 0.13);
+  border-radius: 50%;
+  box-shadow: var(--shadow), inset 0 0 90px rgba(255, 248, 237, 0.88);
+  content: '';
+  inset: 8%;
+  position: absolute;
+}
+
+.courtyard-ring {
+  border: 1px dashed rgba(125, 61, 31, 0.28);
+  border-radius: 50%;
+  position: absolute;
+}
+
+.ring-one {
+  inset: 16%;
+}
+
+.ring-two {
+  inset: 28%;
+}
+
+.hearth,
+.path-node {
+  align-items: center;
+  border: 0;
+  display: inline-flex;
+  gap: 8px;
+  position: absolute;
+  z-index: 2;
+}
+
+.hearth {
+  background: radial-gradient(circle, var(--clay), var(--coffee));
+  border-radius: 50%;
+  box-shadow: 0 20px 60px rgba(125, 61, 31, 0.32);
+  color: white;
+  flex-direction: column;
+  font-weight: 900;
+  height: 138px;
+  justify-content: center;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 138px;
+}
+
+.hearth:hover {
+  transform: translate(-50%, -53%);
+}
+
+.path-node {
+  background: rgba(255, 250, 241, 0.9);
+  border: 1px solid rgba(125, 61, 31, 0.15);
+  border-radius: 999px;
+  box-shadow: 0 18px 46px rgba(63, 30, 15, 0.13);
+  color: var(--coffee-dark);
+  font-weight: 900;
+  padding: 14px 18px;
+}
+
+.node-community {
+  left: 3%;
+  top: 35%;
+}
+
+.node-women {
+  right: 0;
+  top: 23%;
+}
+
+.node-retreats {
+  bottom: 18%;
+  right: 9%;
+}
+
+.node-practice {
+  bottom: 12%;
+  left: 14%;
+}
+
+.story-ribbon {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 8px 0 78px;
+}
+
+.story-ribbon article,
+.village-note,
+.cycle-card,
+.soft-panel,
+.whisper-card,
+.circle-card,
+.create-post,
+.journal-card,
+.ritual-reader,
+.booking-form,
+.confirmation-card,
+.profile-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  box-shadow: 0 18px 54px rgba(63, 30, 15, 0.08);
+}
+
+.story-ribbon article {
+  border-radius: 28px 28px 28px 6px;
+  padding: 24px;
+}
+
+.story-ribbon span,
+.tag,
+.ritual-card span,
+.retreat-card span,
+.ritual-reader span,
+.form-footer,
+.timeline-entry,
+.card-meta span {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.story-ribbon p {
+  margin-bottom: 0;
+}
+
+.two-column,
+.profile-grid {
+  display: grid;
+  gap: 30px;
+  grid-template-columns: minmax(330px, 0.84fr) minmax(0, 1.16fr);
+}
+
+.lower-grid {
+  margin-top: 34px;
+}
+
+.cycle-card {
+  border-radius: 42px 42px 42px 10px;
+  min-height: 540px;
+  padding: 44px;
+  text-align: center;
+}
+
+.moon-bowl {
+  align-items: center;
+  background:
+    radial-gradient(circle at 50% 32%, rgba(216, 173, 103, 0.24), transparent 18%),
+    radial-gradient(circle at center, rgba(255, 248, 237, 0.9), rgba(232, 211, 186, 0.3));
+  border: 1px solid rgba(125, 61, 31, 0.17);
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  height: 258px;
+  justify-content: center;
+  margin: 34px auto;
+  max-width: 258px;
+  outline: 1px dashed rgba(125, 61, 31, 0.28);
+  outline-offset: 14px;
+  position: relative;
+}
+
+.moon-drop {
+  background: var(--coffee);
+  border-radius: 50% 50% 46% 46%;
+  height: 34px;
+  position: absolute;
+  top: 28px;
+  width: 34px;
+}
+
+.bowl-line {
+  border: 1px solid rgba(125, 61, 31, 0.14);
+  border-radius: 50%;
+  position: absolute;
+}
+
+.line-a {
+  inset: 24%;
+}
+
+.line-b {
+  inset: 34%;
+}
+
+.moon-bowl strong {
+  color: var(--coffee);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 4.2rem;
+  line-height: 0.9;
+}
+
+.moon-bowl small {
+  color: var(--muted);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.quote {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.45rem;
+  font-style: italic;
+}
+
+.section-title {
+  margin: 0 0 22px;
+}
+
+.stack {
+  display: grid;
+  gap: 18px;
+}
+
+.whisper-card {
+  border-radius: 26px 26px 8px 26px;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: auto 1fr;
+  padding: 24px;
+}
+
+.anonymous-card {
+  background: rgba(255, 246, 230, 0.88);
+}
+
+.mini-avatar {
+  height: 50px;
+  width: 50px;
+}
+
+.card-meta {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.reaction-row {
+  justify-content: space-between;
+}
+
+.reaction-row button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--coffee);
+  display: inline-flex;
+  font-weight: 900;
+  gap: 6px;
+  padding: 0;
+}
+
+.reaction-row span {
+  align-items: center;
+  display: inline-flex;
+  gap: 5px;
+}
+
+.village-note {
+  align-items: center;
+  border-radius: 24px;
+  display: flex;
+  gap: 18px;
+  padding: 24px;
+}
+
+.village-note svg {
+  color: var(--green);
+  flex: 0 0 auto;
+}
+
+.page-intro {
+  margin-bottom: 36px;
+  max-width: 980px;
+}
+
+.searchbar {
+  align-items: center;
+  background: rgba(255, 250, 241, 0.84);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  display: flex;
+  gap: 12px;
+  margin-bottom: 22px;
+  padding: 0 20px;
+}
+
+.searchbar input {
+  background: transparent;
+  border: 0;
+  min-height: 56px;
+  outline: 0;
+  width: 100%;
+}
+
+.circle-grid,
+.retreat-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.circle-card {
+  border-radius: 30px 30px 30px 8px;
+  padding: 25px;
+  text-align: left;
+}
+
+.circle-card.selected,
+.ritual-card.selected,
+.retreat-card.selected {
+  outline: 2px solid rgba(23, 62, 29, 0.34);
+}
+
+.circle-stats {
+  justify-content: space-between;
+}
+
+.ritual-line {
+  color: var(--coffee);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.25rem;
+  font-style: italic;
+}
+
+.circle-card button.joined {
+  background: var(--green-soft);
+  border-color: var(--green-soft);
+}
+
+.circle-feed {
+  margin-top: 44px;
+}
+
+.soft-panel,
+.create-post,
+.journal-card,
+.booking-form,
+.profile-card {
+  border-radius: 34px 34px 34px 8px;
+  padding: 30px;
+}
+
+.cycle-dashboard {
+  align-self: stretch;
+}
+
+.phase-buttons,
+.care-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.phase-buttons button,
+.care-grid span,
+.ceremony-steps span {
+  background: rgba(125, 61, 31, 0.08);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--coffee);
+  font-weight: 900;
+  padding: 10px 14px;
+}
+
+.phase-buttons .active-phase {
+  background: var(--coffee);
+  color: white;
+}
+
+.form-heading {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+
+textarea,
+input,
+select {
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  color: var(--ink);
+  outline: 0;
+  padding: 14px 16px;
+  width: 100%;
+}
+
+textarea {
+  min-height: 150px;
+  resize: vertical;
+}
+
+.create-post textarea,
+.journal-card textarea {
+  margin: 18px 0;
+}
+
+.form-footer {
+  justify-content: space-between;
+}
+
+.ritual-layout {
+  display: grid;
+  gap: 26px;
+  grid-template-columns: minmax(280px, 0.45fr) minmax(0, 1fr);
+}
+
+.ritual-list {
+  display: grid;
+  gap: 14px;
+}
+
+.ritual-card {
+  background: rgba(255, 250, 241, 0.78);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  color: var(--ink);
+  display: grid;
+  gap: 8px;
+  padding: 20px;
+  text-align: left;
+}
+
+.ritual-card strong {
+  color: var(--coffee);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.5rem;
+}
+
+.ritual-reader {
+  border-radius: 44px 44px 44px 12px;
+  padding: clamp(30px, 5vw, 64px);
+}
+
+.ritual-reader svg {
+  color: var(--sand);
+}
+
+.ceremony-steps {
+  margin: 24px 0;
+}
+
+.journal-card {
+  display: grid;
+  gap: 12px;
+}
+
+.journal-card label,
+.booking-form label {
+  color: var(--muted);
+  display: grid;
+  font-weight: 900;
+  gap: 8px;
+}
+
+.timeline-entry {
+  background: rgba(125, 61, 31, 0.06);
+  border-radius: 16px;
+  padding: 14px;
+}
+
+.retreat-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.retreat-card {
+  border: 1px solid var(--line);
+  border-radius: 36px 36px 36px 10px;
+  box-shadow: var(--shadow);
+  color: white;
+  display: grid;
+  gap: 14px;
+  min-height: 320px;
+  overflow: hidden;
+  padding: 28px;
+  position: relative;
+  text-align: left;
+}
+
+.retreat-card::before {
+  background: radial-gradient(circle at 78% 18%, rgba(255, 255, 255, 0.38), transparent 22%);
+  content: '';
+  inset: 0;
+  position: absolute;
+}
+
+.retreat-card > * {
+  position: relative;
+}
+
+.retreat-card h3,
+.retreat-card strong {
+  color: white;
+}
+
+.retreat-card p {
+  align-self: end;
+}
+
+.forest {
+  background: linear-gradient(135deg, rgba(23, 62, 29, 0.95), rgba(129, 98, 50, 0.78));
+}
+
+.water {
+  background: linear-gradient(135deg, rgba(38, 70, 72, 0.92), rgba(126, 103, 77, 0.78));
+}
+
+.coffee {
+  background: linear-gradient(135deg, rgba(59, 29, 18, 0.96), rgba(185, 107, 69, 0.86));
+}
+
+.booking-form {
+  align-items: end;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: 1.4fr 1fr 0.7fr 1fr auto;
+  margin-top: 28px;
+}
+
+.confirmation-card {
+  align-items: center;
+  background: rgba(255, 238, 207, 0.9);
+  border-radius: 26px;
+  display: flex;
+  gap: 18px;
+  margin-top: 20px;
+  padding: 24px;
+}
+
+.profile-card {
+  text-align: center;
+}
+
+.profile-stats {
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.profile-stats span {
+  background: rgba(125, 61, 31, 0.07);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.profile-stats b {
+  color: var(--coffee);
+  display: block;
+  font-size: 1.55rem;
+}
+
+.toast {
+  align-items: center;
+  background: var(--green);
+  border: 0;
+  border-radius: 999px;
+  bottom: 28px;
+  box-shadow: var(--shadow);
+  color: white;
+  display: inline-flex;
+  font-weight: 900;
+  gap: 10px;
+  left: 50%;
+  max-width: calc(100% - 36px);
+  padding: 16px 22px;
+  position: fixed;
+  transform: translateX(-50%);
+  z-index: 60;
+}
+
+.toast:hover {
+  transform: translateX(-50%) translateY(-2px);
+}
+
+.bottom-nav {
+  background: rgba(255, 250, 241, 0.92);
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  bottom: 18px;
+  box-shadow: var(--shadow);
+  display: none;
+  gap: 2px;
+  left: 50%;
+  padding: 9px;
+  position: fixed;
+  transform: translateX(-50%);
+  width: min(680px, calc(100% - 20px));
+  z-index: 50;
+}
+
+.bottom-nav button {
+  align-items: center;
+  border-radius: 20px;
+  color: var(--muted);
+  display: grid;
+  flex: 1;
+  font-size: 0.72rem;
+  font-weight: 800;
+  gap: 2px;
+  justify-items: center;
+  padding: 9px 4px;
+}
+
+.bottom-nav svg {
+  height: 19px;
+  width: 19px;
+}
+
+.bottom-nav button.active {
+  background: rgba(23, 62, 29, 0.1);
+  color: var(--green);
+}
+
+@media (max-width: 1120px) {
+  .hero-village,
+  .two-column,
+  .profile-grid,
+  .ritual-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .courtyard {
+    margin: 0 auto;
+    max-width: 640px;
+    min-height: 520px;
+    width: 100%;
+  }
+
+  .story-ribbon,
+  .circle-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .booking-form {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  main {
+    padding-bottom: 96px;
+  }
+
+  .topbar {
+    height: 66px;
+    padding: 0 16px;
+  }
+
+  .desktop-nav {
+    display: none;
+  }
+
+  .brand span:last-child {
+    font-size: 1rem;
+  }
+
+  .page-shell {
+    padding: 38px 16px 74px;
+  }
+
+  h1 {
+    font-size: 3.25rem;
+  }
+
+  .hero-village {
+    gap: 36px;
+    min-height: auto;
+  }
+
+  .courtyard {
+    min-height: 380px;
+  }
+
+  .hearth {
+    height: 112px;
+    width: 112px;
+  }
+
+  .path-node {
+    font-size: 0.78rem;
+    padding: 10px 12px;
+  }
+
+  .node-community {
+    left: 0;
+  }
+
+  .node-women {
+    right: 0;
+    top: 16%;
+  }
+
+  .story-ribbon,
+  .circle-grid,
+  .retreat-grid,
+  .booking-form {
+    grid-template-columns: 1fr;
+  }
+
+  .cycle-card,
+  .soft-panel,
+  .create-post,
+  .journal-card,
+  .ritual-reader,
+  .booking-form,
+  .profile-card {
+    padding: 24px;
+  }
+
+  .card-meta,
+  .reaction-row,
+  .form-footer,
+  .confirmation-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .bottom-nav {
+    display: flex;
+  }
+}
+
+/* Loading */
+.loading-screen {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Onboarding */
+.onboarding-overlay,
+.modal-overlay {
+  align-items: center;
+  background: rgba(38, 26, 20, 0.55);
+  backdrop-filter: blur(8px);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 24px;
+  position: fixed;
+  z-index: 100;
+}
+
+.onboarding-card,
+.crisis-modal,
+.selam-plus-modal {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 36px 36px 36px 10px;
+  box-shadow: var(--shadow);
+  max-width: 520px;
+  padding: clamp(32px, 6vw, 56px);
+  position: relative;
+  text-align: center;
+  width: 100%;
+}
+
+.onboarding-mark {
+  align-items: center;
+  background: var(--green);
+  border-radius: 50%;
+  color: var(--cream);
+  display: inline-flex;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2.4rem;
+  height: 72px;
+  justify-content: center;
+  margin-bottom: 18px;
+  width: 72px;
+}
+
+.onboarding-pillars,
+.lang-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin: 22px 0;
+}
+
+.onboarding-pillars span,
+.lang-toggle button {
+  background: rgba(125, 61, 31, 0.08);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--coffee);
+  font-weight: 900;
+  padding: 10px 16px;
+}
+
+.lang-toggle button.active {
+  background: var(--coffee);
+  color: white;
+}
+
+.onboarding-field {
+  display: grid;
+  gap: 8px;
+  margin: 20px 0;
+  text-align: left;
+  width: 100%;
+}
+
+.onboarding-check {
+  align-items: flex-start;
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.onboarding-circle-preview {
+  background: rgba(125, 61, 31, 0.06);
+  border-radius: 20px;
+  margin: 20px 0;
+  padding: 20px;
+  text-align: left;
+}
+
+.onboarding-dots {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 28px;
+}
+
+.onboarding-dots span {
+  background: rgba(125, 61, 31, 0.2);
+  border-radius: 50%;
+  height: 8px;
+  width: 8px;
+}
+
+.onboarding-dots span.active {
+  background: var(--coffee);
+  width: 24px;
+}
+
+.wide {
+  width: 100%;
+}
+
+/* Modals */
+.modal-close {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  position: absolute;
+  right: 20px;
+  top: 20px;
+}
+
+.crisis-modal svg:first-of-type,
+.selam-plus-modal svg:first-of-type {
+  color: var(--green);
+  margin-bottom: 12px;
+}
+
+.crisis-actions {
+  margin: 24px 0;
+}
+
+.crisis-note {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.perk-list {
+  list-style: none;
+  margin: 24px 0;
+  padding: 0;
+  text-align: left;
+}
+
+.perk-list li {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.fine-print {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+/* Header extras */
+.api-status {
+  align-items: center;
+  border-radius: 50%;
+  display: inline-flex;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
+}
+
+.api-status.online {
+  background: rgba(23, 62, 29, 0.1);
+  color: var(--green);
+}
+
+.api-status.offline {
+  background: rgba(125, 61, 31, 0.1);
+  color: var(--muted);
+}
+
+.premium-badge,
+.upgrade-btn {
+  align-items: center;
+  background: linear-gradient(135deg, var(--sand), var(--clay));
+  border: 0;
+  border-radius: 999px;
+  color: var(--coffee-dark);
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 900;
+  gap: 6px;
+  padding: 8px 14px;
+}
+
+.upgrade-btn {
+  background: rgba(23, 62, 29, 0.09);
+  color: var(--green);
+}
+
+.premium-badge.large {
+  display: inline-flex;
+  margin-top: 12px;
+}
+
+.notif-btn {
+  background: none;
+  border: 0;
+  position: relative;
+}
+
+.notif-dot {
+  background: var(--clay);
+  border-radius: 50%;
+  height: 8px;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 8px;
+}
+
+.notif-panel {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  max-width: 280px;
+  padding: 14px;
+  position: absolute;
+  right: 80px;
+  top: 60px;
+  z-index: 40;
+}
+
+.notif-panel p {
+  font-size: 0.85rem;
+  margin: 0 0 8px;
+}
+
+/* Featured partner */
+.featured-partner {
+  align-items: center;
+  background: rgba(216, 173, 103, 0.22);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  display: flex;
+  gap: 14px;
+  margin-top: 28px;
+  padding: 18px;
+}
+
+.featured-partner svg {
+  color: var(--coffee);
+  flex-shrink: 0;
+}
+
+.featured-partner p {
+  font-size: 0.92rem;
+  margin: 4px 0 0;
+}
+
+/* Feed tabs */
+.feed-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 22px;
+}
+
+.feed-tabs button {
+  background: rgba(125, 61, 31, 0.08);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--coffee);
+  font-weight: 900;
+  padding: 10px 18px;
+}
+
+.feed-tabs button.active {
+  background: var(--coffee);
+  color: white;
+}
+
+/* Reactions */
+.reaction-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.reaction-total {
+  color: var(--muted);
+  display: block;
+  font-size: 0.82rem;
+  margin-top: 8px;
+}
+
+.pending-card {
+  border-color: rgba(185, 107, 69, 0.4);
+  opacity: 0.85;
+}
+
+/* Retreats */
+.featured-retreat {
+  outline: 2px solid var(--sand);
+  outline-offset: 3px;
+}
+
+.partner-badge {
+  background: var(--sand);
+  border-radius: 999px;
+  color: var(--coffee-dark);
+  font-size: 0.72rem;
+  font-weight: 900;
+  padding: 4px 10px;
+  width: fit-content;
+}
+
+.booking-total {
+  display: grid;
+  gap: 4px;
+}
+
+.booking-total small {
+  color: var(--muted);
+}
+
+/* Practitioners */
+.practitioner-spotlight {
+  margin-top: 48px;
+}
+
+.practitioner-grid {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.practitioner-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 30px;
+  display: grid;
+  gap: 20px;
+  grid-template-columns: auto 1fr;
+  padding: 28px;
+}
+
+.practitioner-avatar {
+  align-items: center;
+  background: linear-gradient(140deg, var(--coffee-dark), var(--clay));
+  border-radius: 50%;
+  color: white;
+  display: flex;
+  height: 80px;
+  justify-content: center;
+  overflow: hidden;
+  width: 80px;
+}
+
+.practitioner-avatar img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.practitioner-title {
+  color: var(--green);
+  font-weight: 900;
+}
+
+.practitioner-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.practitioner-meta span {
+  background: rgba(125, 61, 31, 0.07);
+  border-radius: 12px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 6px 10px;
+}
+
+.inline-crown {
+  color: var(--sand);
+  display: inline;
+  vertical-align: middle;
+}
+
+/* Investor panel */
+.investor-panel {
+  margin-top: 48px;
+}
+
+.ethics-banner {
+  align-items: center;
+  background: rgba(23, 62, 29, 0.08);
+  border-radius: 16px;
+  display: flex;
+  gap: 10px;
+  margin-bottom: 22px;
+  padding: 14px 18px;
+}
+
+.revenue-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.revenue-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  display: grid;
+  gap: 8px;
+  padding: 24px;
+}
+
+.revenue-card h3 {
+  font-size: 1.4rem;
+}
+
+.revenue-card strong {
+  color: var(--coffee);
+  font-size: 1.1rem;
+}
+
+.partner-line {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.data-dashboard {
+  margin-top: 28px;
+}
+
+.profile-lang {
+  margin-top: 20px;
+}
+
+@media (max-width: 1120px) {
+  .practitioner-grid,
+  .revenue-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+  <defs>
+    <pattern id="tibeb" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
+      <rect width="60" height="60" fill="#fff8ed" opacity="0.3"/>
+      <path d="M30 5 L35 25 L55 30 L35 35 L30 55 L25 35 L5 30 L25 25 Z" fill="none" stroke="#7d3d1f" stroke-width="0.8" opacity="0.18"/>
+      <circle cx="30" cy="30" r="4" fill="none" stroke="#173e1d" stroke-width="0.6" opacity="0.12"/>
+      <path d="M0 30 H60 M30 0 V60" stroke="#b96b45" stroke-width="0.4" opacity="0.1"/>
+    </pattern>
+  </defs>
+  <rect width="120" height="120" fill="url(#tibeb)"/>
+</svg>
